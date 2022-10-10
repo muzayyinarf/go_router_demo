@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:go_router_demo/bloc/user_bloc.dart';
 import 'package:go_router_demo/pages.dart';
-
-import 'user.dart';
 
 void main() {
   runApp(MyApp());
@@ -28,25 +28,17 @@ class MyApp extends StatelessWidget {
             builder: (context, state) => const AboutPage(),
           ),
           GoRoute(
-              path: 'profile/:name',
+              path: 'profile',
               name: 'profile',
               builder: (context, state) {
-                String name = state.params['name'] ?? 'no name';
-                return ProfilePage(name: name);
+                return const ProfilePage();
               },
               routes: [
                 GoRoute(
                   path: 'edit_profile',
                   name: 'edit_profile',
                   builder: (context, state) {
-                    Object? object = state.extra;
-
-                    if (object != null && object is User) {
-                      return EditProfilePage(user: object);
-                    } else {
-                      return const EditProfilePage(
-                          user: User('no name', 'no email'));
-                    }
+                    return const EditProfilePage();
                   },
                 )
               ]),
@@ -60,11 +52,23 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      routeInformationParser: router.routeInformationParser,
-      routerDelegate: router.routerDelegate,
-      routeInformationProvider: router.routeInformationProvider,
-      debugShowCheckedModeBanner: false,
+    return BlocProvider(
+      create: (context) => UserBloc()..add(CheckSignInStatus()),
+      child: BlocListener<UserBloc, UserState>(
+        listener: (context, state) {
+          if (state is UserSignedIn) {
+            router.goNamed('main_page');
+          } else if (state is UserSignedOut) {
+            router.goNamed('login');
+          }
+        },
+        child: MaterialApp.router(
+          routeInformationParser: router.routeInformationParser,
+          routerDelegate: router.routerDelegate,
+          routeInformationProvider: router.routeInformationProvider,
+          debugShowCheckedModeBanner: false,
+        ),
+      ),
     );
   }
 }
